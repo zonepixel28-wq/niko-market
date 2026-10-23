@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Niko Market — Առցանց խանութ</title>
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <meta name="description" content="Niko Market՝ առցանց խանութ։ Բացահայտիր ապրանքները, ընտրիր քո նախընտրածը և ձևակերպիր պատվերդ։">
+  <meta name="robots" content="index, follow">
+  <meta name="application-name" content="Niko Market">
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f6fa;
+      color: #222;
+    }
+
+    header {
+      background: #6c3df4;
+      color: white;
+      padding: 22px 6%;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 14px;
+    }
+
+    .brand img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      background: white;
+      border-radius: 10px;
+    }
+
+    input {
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    header input { width: 100%; }
+
+    main { padding: 25px 6%; }
+
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 18px;
+    }
+
+    .product {
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 2px 9px #0000000d;
+    }
+
+    .picture {
+      font-size: 65px;
+      text-align: center;
+      padding: 15px 0;
+      background: #f0edff;
+      border-radius: 9px;
+    }
+
+    .price { font-size: 20px; font-weight: bold; }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #6c3df4;
+      color: white;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button:hover { background: #5128d8; }
+
+    #cart, #order {
+      background: white;
+      padding: 18px;
+      margin-bottom: 22px;
+      border-radius: 12px;
+    }
+
+    #order input { width: 100%; margin-top: 6px; }
+
+    #order label { display: block; margin-top: 12px; }
+
+    #orderResult { line-height: 1.6; }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+const SUPABASE_URL = "https://efkeveufcghbtkozkkag.supabase.co";
+const SUPABASE_KEY = "sb_publishable_dDNNPBWil4PMQBxeuoM9xg_f7Xj7KmC";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+supabaseClient
+  .from("messages")
+  .select("id")
+  .limit(1)
+  .then(({ data, error }) => {
+    console.log("Niko Market DB:", error ? error.message : "Կապը հաջողվեց");
+  });
+console.log("Niko Market Supabase:", !!window.supabase);
+</script>
+</head>
+<body>
+  <header>
+    <h1 class="brand">
+      <img src="images/logo.png" alt="Niko Market logo">
+      <span>Niko Market</span>
+    </h1>
+    <p>Քո գնումները՝ մեկ վայրում</p>
+    <input id="search" placeholder="Փնտրիր ապրանք...">
+  </header>
+
+  <main>
+    <h2>Ապրանքներ</h2>
+
+    <div id="cart">
+      🛒 Զամբյուղ՝ <strong id="count">0</strong> ապրանք
+      <div id="total">Ընդամենը՝ 0 ֏</div>
+      <div id="cartItems"></div>
+      <button id="clearCart" type="button"
+        style="margin-top:12px;background:#777">
+        Դատարկել զամբյուղը
+      </button>
+    </div>
+
+    <div class="products" id="products"></div>
+
+    <section id="order">
+      <h2>📦 Պատվերի ձևակերպում</h2>
+
+      <form id="orderForm">
+        <label for="customer">Անուն և ազգանուն</label>
+        <input id="customer" name="customer" required
+          placeholder="Քո անունը">
+
+        <label for="phone">Հեռախոսահամար</label>
+        <input id="phone" name="phone" type="tel" required
+          placeholder="0XX XXX XXX">
+
+        <label for="address">Առաքման հասցե</label>
+        <input id="address" name="address" required
+          placeholder="Քաղաք, փողոց, տուն">
+
+        <label for="delivery">Առաքման արժեքը (դրամ)</label>
+        <input id="delivery" name="delivery" type="number"
+          min="0" value="1000" required>
+
+        <button type="submit" style="margin-top:16px">
+          Հաշվել պատվերի արժեքը
+        </button>
+      </form>
+
+      <p id="orderResult" aria-live="polite"></p>
+    </section>
+  </main>
+
+ <script>
+const items = [
+  { name: "Ականջակալ", price: 4500, emoji: "🎧" },
+  { name: "Ժամացույց", price: 7000, emoji: "⌚" },
+  { name: "Ուսապարկ", price: 8500, emoji: "🎒" },
+  { name: "Արևային ակնոց", price: 3500, emoji: "🕶️" },
+  { name: "Բարձրախոս", price: 9000, emoji: "🔊" },
+  { name: "Սպորտային գնդակ", price: 4000, emoji: "⚽" }
+];
+
+let cart = [];
+
+try {
+  const savedCart = JSON.parse(localStorage.getItem("nikoMarketCart") || "[]");
+
+  if (Array.isArray(savedCart)) {
+    cart = savedCart
+      .filter(entry =>
+        entry &&
+        typeof entry.name === "string" &&
+        Number.isFinite(entry.price) &&
+        entry.price >= 0 &&
+        Number.isInteger(entry.quantity) &&
+        entry.quantity > 0
+      )
+      .map(entry => ({
+        item: items.find(item => item.name === entry.name),
+        quantity: entry.quantity
+      }))
+      .filter(entry => entry.item);
+  }
+} catch {
+  cart = [];
+}
+
+function saveCart() {
+  localStorage.setItem(
+    "nikoMarketCart",
+    JSON.stringify(
+      cart.map(entry => ({
+        name: entry.item.name,
+        price: entry.item.price,
+        quantity: entry.quantity
+      }))
+    )
+  );
+}
+
+const productsElement = document.getElementById("products");
+const searchElement = document.getElementById("search");
+const money = value => value.toLocaleString("hy-AM") + " ֏";
+
+function renderProducts() {
+  const query = searchElement.value.toLowerCase().trim();
+  productsElement.innerHTML = "";
+
+  items.filter(item => item.name.toLowerCase().includes(query))
+    .forEach(item => {
+      const card = document.createElement("div");
+      card.className = "product";
+
+      const picture = document.createElement("div");
+      picture.className = "picture";
+      picture.textContent = item.emoji;
+
+      const name = document.createElement("h3");
+      name.textContent = item.name;
+
+      const price = document.createElement("p");
+      price.className = "price";
+      price.textContent = money(item.price);
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = "Ավելացնել զամբյուղ";
+
+      button.addEventListener("click", () => {
+        const existing = cart.find(entry => entry.item === item);
+
+        if (existing) {
+          existing.quantity++;
+        } else {
+          cart.push({ item, quantity: 1 });
+        }
+
+        updateCart();
+      });
+
+      card.append(picture, name, price, button);
+      productsElement.appendChild(card);
+    });
+}
+
+function updateCart() {
+     saveCart();
+
+
+  const count = cart.reduce((sum, entry) => sum + entry.quantity, 0);
+  const total = cart.reduce(
+    (sum, entry) => sum + entry.item.price * entry.quantity, 0
+  );
+
+  document.getElementById("count").textContent = count;
+  document.getElementById("total").textContent = "Ընդամենը՝ " + money(total);
+
+  const cartItems = document.getElementById("cartItems");
+  cartItems.innerHTML = "";
+
+  cart.forEach((entry, index) => {
+    const row = document.createElement("div");
+    row.style.cssText =
+      "display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0;padding:10px;background:#f5f6fa;border-radius:8px";
+
+    const info = document.createElement("span");
+    info.style.flex = "1";
+    info.textContent =
+      entry.item.emoji + " " + entry.item.name + " — " +
+      money(entry.item.price) + " × " + entry.quantity;
+
+    const minus = document.createElement("button");
+    minus.type = "button";
+    minus.textContent = "−";
+    minus.style.width = "42px";
+    minus.setAttribute("aria-label", entry.item.name + " քանակը պակասեցնել");
+
+    minus.addEventListener("click", () => {
+      entry.quantity--;
+      if (entry.quantity <= 0) cart.splice(index, 1);
+      updateCart();
+    });
+
+    const plus = document.createElement("button");
+    plus.type = "button";
+    plus.textContent = "+";
+    plus.style.width = "42px";
+    plus.setAttribute("aria-label", entry.item.name + " քանակը ավելացնել");
+
+    plus.addEventListener("click", () => {
+      entry.quantity++;
+      updateCart();
+    });
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "Հեռացնել";
+    remove.style.cssText = "width:auto;background:#b42318;padding:10px";
+
+    remove.addEventListener("click", () => {
+      cart.splice(index, 1);
+      updateCart();
+    });
+
+    row.append(info, minus, plus, remove);
+    cartItems.appendChild(row);
+  });
+}
+
+searchElement.addEventListener("input", renderProducts);
+
+document.getElementById("clearCart").addEventListener("click", () => {
+  cart = [];
+  updateCart();
+});
+
+document.getElementById("orderForm").addEventListener("submit", function(event) {
+  event.preventDefault();
+
+  const result = document.getElementById("orderResult");
+
+  if (cart.length === 0) {
+    result.textContent = "Նախ ավելացրու առնվազն մեկ ապրանք զամբյուղում։";
+    return;
+  }
+
+  const form = new FormData(this);
+  const delivery = Number(form.get("delivery"));
+
+  if (!Number.isFinite(delivery) || delivery < 0) {
+    result.textContent = "Ստուգիր առաքման արժեքը։";
+    return;
+  }
+
+  const subtotal = cart.reduce(
+    (sum, entry) => sum + entry.item.price * entry.quantity, 0
+  );
+
+  const lines = cart.map(entry =>
+    entry.item.name + " × " + entry.quantity + " = " +
+    money(entry.item.price * entry.quantity)
+  );
+
+  result.textContent =
+    "Պատվերի նախնական հաշվարկ\n" +
+    "Հաճախորդ՝ " + form.get("customer") + "\n" +
+    "Հեռախոս՝ " + form.get("phone") + "\n" +
+    "Հասցե՝ " + form.get("address") + "\n" +
+    "Ապրանքներ՝ " + lines.join("; ") + "\n" +
+    "Ապրանքների գումար՝ " + money(subtotal) + "\n" +
+    "Առաքում՝ " + money(delivery) + "\n" +
+    "Ընդհանուր՝ " + money(subtotal + delivery) +
+    "\nՍա միայն հաշվարկ է․ պատվերը դեռ չի պահպանվել կամ ուղարկվել։";
+});
+
+renderProducts();
+updateCart();
+</script>
+</body>
+</html>

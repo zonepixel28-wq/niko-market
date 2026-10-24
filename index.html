@@ -178,17 +178,20 @@ const items = [
   {
     name: "Մինի պրոյեկտոր",
     price: 6500,
-    emoji: "📽️"
+    emoji: "📽️",
+    image: "projector.jpg.png"
   },
   {
     name: "V8 + BM800 փոդքասթի հավաքածու",
     price: 8000,
-    emoji: "🎙️"
+    emoji: "🎙️",
+    image: "podcast.jpg.avif"
   },
   {
     name: "Լարային դինամիկ խոսափող",
     price: 3500,
-    emoji: "🎤"
+    emoji: "🎤",
+    image: "microphone.jpg.jfif"
   }
 ];
 
@@ -243,9 +246,20 @@ function renderProducts() {
       const card = document.createElement("div");
       card.className = "product";
 
-      const picture = document.createElement("div");
-      picture.className = "picture";
-      picture.textContent = item.emoji;
+     const picture = document.createElement("div");
+picture.className = "picture";
+
+const img = document.createElement("img");
+img.src = item.image;
+img.alt = item.name;
+img.style.cssText =
+  "width:100%;height:180px;object-fit:contain;border-radius:9px";
+
+img.onerror = () => {
+  picture.textContent = item.emoji;
+};
+
+picture.appendChild(img);
 
       const name = document.createElement("h3");
       name.textContent = item.name;
